@@ -1,16 +1,8 @@
-#ifndef __MONTY_H__
-#define __MONTY_H__
+#ifndef MONTY_H
+#define MONTY_H
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-
-#define STACK 0
-#define QUEUE 1
-#define DELIMS " \n\t\a\b"
-
-/* GLOBAL OPCODE TOKENS */
-extern char **op_toks;
 
 /**
  * struct stack_s - doubly linked list representation of a stack (or queue)
@@ -28,10 +20,12 @@ typedef struct stack_s
 	struct stack_s *next;
 } stack_t;
 
+typedef void (*instruction_fn)(stack_t **);
+
 /**
  * struct instruction_s - opcode and its function
  * @opcode: the opcode
- * @f: function to handle the opcode
+ * @fn: function to handle the opcode
  *
  * Description: opcode and its function
  * for stack, queues, LIFO, FIFO Holberton project
@@ -39,51 +33,69 @@ typedef struct stack_s
 typedef struct instruction_s
 {
 	char *opcode;
-	void (*f)(stack_t **stack, unsigned int line_number);
+	instruction_fn fn;
 } instruction_t;
 
-/* PRIMARY INTERPRETER FUNCTIONS */
-void free_stack(stack_t **stack);
-int init_stack(stack_t **stack);
-int check_mode(stack_t *stack);
-void free_tokens(void);
-unsigned int token_arr_len(void);
-int run_monty(FILE *script_fd);
-void set_op_tok_error(int error_code);
+/**
+ * enum stack_mode_n - stack mode enumeration
+ * @LIFO: operate as a stack
+ * @FIFO: operate as a queue
+ */
+typedef enum stack_mode_n
+{
+	LIFO = 0,
+	FIFO = 1
+} stack_mode_t;
 
-/* OPCODE FUNCTIONS */
-void monty_push(stack_t **stack, unsigned int line_number);
-void monty_pall(stack_t **stack, unsigned int line_number);
-void monty_pint(stack_t **stack, unsigned int line_number);
-void monty_pop(stack_t **stack, unsigned int line_number);
-void monty_swap(stack_t **stack, unsigned int line_number);
-void monty_add(stack_t **stack, unsigned int line_number);
-void monty_nop(stack_t **stack, unsigned int line_number);
-void monty_sub(stack_t **stack, unsigned int line_number);
-void monty_div(stack_t **stack, unsigned int line_number);
-void monty_mul(stack_t **stack, unsigned int line_number);
-void monty_mod(stack_t **stack, unsigned int line_number);
-void monty_pchar(stack_t **stack, unsigned int line_number);
-void monty_pstr(stack_t **stack, unsigned int line_number);
-void monty_rotl(stack_t **stack, unsigned int line_number);
-void monty_rotr(stack_t **stack, unsigned int line_number);
-void monty_stack(stack_t **stack, unsigned int line_number);
-void monty_queue(stack_t **stack, unsigned int line_number);
+/**
+ * struct op_env_s - operation environment
+ * @sp: top of the stack
+ * @argv: argument vector
+ * @line: line buffer
+ * @linesz: line buffer size
+ * @lineno: line number
+ * @mode: stack operation mode
+ */
+typedef struct op_env_s
+{
+	stack_t *sp;
+	char **argv;
+	char *line;
+	size_t linesz;
+	size_t lineno;
+	stack_mode_t mode;
+} op_env_t;
 
-/* CUSTOM STANDARD LIBRARY FUNCTIONS */
-char **strtow(char *str, char *delims);
-char *get_int(int n);
+extern op_env_t op_env;
 
-/* ERROR MESSAGES & ERROR CODES */
-int usage_error(void);
-int malloc_error(void);
-int f_open_error(char *filename);
-int unknown_op_error(char *opcode, unsigned int line_number);
-int no_int_error(unsigned int line_number);
-int pop_error(unsigned int line_number);
-int pint_error(unsigned int line_number);
-int short_stack_error(unsigned int line_number, char *op);
-int div_error(unsigned int line_number);
-int pchar_error(unsigned int line_number, char *message);
+instruction_fn get_instruction_fn(const char *opcode);
 
-#endif /* __MONTY_H__ */
+void op_add(stack_t **sp);
+void op_div(stack_t **sp);
+void op_mod(stack_t **sp);
+void op_mul(stack_t **sp);
+void op_nop(stack_t **sp);
+void op_pall(stack_t **sp);
+void op_pchar(stack_t **sp);
+void op_pint(stack_t **sp);
+void op_pop(stack_t **sp);
+void op_pstr(stack_t **sp);
+void op_push(stack_t **sp);
+void op_queue(stack_t **sp);
+void op_rotl(stack_t **sp);
+void op_rotr(stack_t **sp);
+void op_stack(stack_t **sp);
+void op_sub(stack_t **sp);
+void op_swap(stack_t **sp);
+
+char **tokenize(char *str);
+size_t count_tokens(const char *str);
+
+void free_op_env(void);
+void free_stack(stack_t **sp);
+
+void pfailure(const char *fmt, ...);
+
+int isinteger(const char *str);
+
+#endif /* MONTY_H */
